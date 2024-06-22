@@ -27,11 +27,14 @@ module.exports = {
      * Listing 26.3 (p. 384)
      * @TODO: userController.js에서 쿼리 매개변수가 존재할 때 JSON으로 응답하기
      */
-
-    res.render("courses/index", {
-      page: "courses",
-      title: "All Courses",
-    }); // 분리된 액션으로 뷰 렌더링
+    if(req.query.format == "json") {
+      res.json(res.locals.courses);
+    }  else {
+      res.render("courses/index", {
+        page: "courses",
+        title: "All Courses",
+      }); // 분리된 액션으로 뷰 렌더링
+    }
   },
 
   /**

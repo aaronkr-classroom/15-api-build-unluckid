@@ -1,4 +1,3 @@
-
 // routes/courseRoutes.js
 "use strict";
 
@@ -7,7 +6,7 @@
  * @TODO: Course 라우트의 courseRoutes.js로의 이동
  */
 const router = require("express").Router(),
-  coursesController = require("../controllers/coursesController");
+    coursesController = require("../controllers/coursesController");
 
 /**
  * Courses

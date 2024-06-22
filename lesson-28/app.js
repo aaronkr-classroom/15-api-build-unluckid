@@ -96,27 +96,29 @@ app.use((req, res, next) => {
  */
 
 // 애플리케이션에 Mongoose 설정
-const mongoose = require("mongoose"), // mongoose를 요청
-  dbName = "aaronkr";
+const mongoose = require("mongoose"); // mongoose를 요청
 
 // 데이터베이스 연결 설정
-mongoose.connect(`mongodb://127.0.0.1:27017/${dbName}`, {
-  useNewUrlParser: true,
-});
-
 // 연결되면 메시지를 보냄
+mongoose.connect(
+  "mongodb+srv://mymarket67:1234@cluster0.tagycdz.mongodb.net/",
+  {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  }
+);
+
 const db = mongoose.connection;
 db.once("open", () => {
-  console.log(`Connected to ${dbName} MongoDB using Mongoose!`);
+  console.log("connected to MongoDB!!");
 });
-
 /**
  * =====================================================================
  * Define app settings and middleware
  * =====================================================================
  */
 
-app.set("port", process.env.PORT || 3000);
+app.set("port", process.env.PORT || 3001);
 
 // ejs 레이아웃 렌더링
 app.set("view engine", "ejs"); // ejs를 사용하기 위한 애플리케이션 세팅

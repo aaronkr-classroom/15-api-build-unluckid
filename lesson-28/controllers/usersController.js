@@ -6,7 +6,10 @@
  * userController.js에서 인덱스 액션 생성과 index 액션의 재방문
  */
 const passport = require("passport"),
-  User = require("../models/User"); // 사용자 모델 요청
+  httpStatus = require("http-status-codes"), // Lesson 27.3 HTTP 상태 코드 요청
+  User = require("../models/User"), // 사용자 모델 요청
+  jsonWebToken = require("jsonwebtoken"), // Lesson 28.3 JSON Web Token 패키지 요청
+  token = process.env.TOKEN || "nodeT0k3n"; // 토큰을 환경 변수로부터 가져오거나 기본값 설정
 
 /**
  * Listing 22.3 (p. 328)
@@ -29,6 +32,97 @@ const getUserParams = (body) => {
 };
 
 module.exports = {
+  /**
+   * Listing 28.1, 3 (p. 407, 410)
+   * usersController.js에서 API 토큰의 검증을 위한 미들웨어 함수의 추가
+   */
+  verifyToken: (req, res, next) => {
+    let token = req.query.apiToken;
+    console.log("Verifying: ", apiToken); // nodeT0k3n
+    
+    if (token) {
+      User.findOne({ apiToken: token })
+        .then(user => {
+          if (user) next();
+          else next(new Error("Invalid API token!"));
+        })
+        .catch(error => {
+          next(new Error(error.message));
+        });
+    } else {
+      next(new Error("No API token!"));
+    }
+  },
+
+  /**
+   * Listing 28.4 (p. 413)
+   * @TODO: usersController.js에서 API를 위한 로그인 액션 생성
+   */
+  apiAuthenticate: (req, res, next) => {
+    passport.authenticate("local", (errors, user) => {
+      if (user) {
+        console.log("User found! ", user);
+        let signedToken = jsonWebToken.sign(
+          {
+            data: user._id,
+            exp: new Date().setDate(new Date().getDate() + 1)
+          },
+          "secret_encoding_passphrase"
+        );
+
+        res.json({
+          success: true,
+          message: "Success authenticating user!"
+        });
+      } else {
+        console.log("NO User found!");
+        res.json({
+          success: false,
+          message: "Could not authenticate user!"
+        });
+      }
+    })(req, res, next);
+  },
+
+  /**
+   * Listing 28.6 (p. 414-415)
+   * userController.js에서 API를 위한 유효성 체크 액션 생성
+   */
+  verifyJWT: (req, res, next) => {
+    let token = req.headers.token;
+    console.log(req.headers);
+
+    if (token) {
+      jsonWebToken.verify(
+        token,
+        "secret_encoding_passphrase",
+        (errors, payload) => {
+          if (payload) {
+            User.findById(payload.data._id).then(user => {
+              if (user) next();
+              else 
+                res.status(httpStatus.FORBIDDEN).json({
+                  error: true,
+                  message: "No user account found!"
+                });
+            });
+          } else {
+            res.status(httpStatus.UNAUTHORIZED).json({
+              error: true,
+              message: "Cannot verify API token!"
+            });
+          }
+          next();
+        }
+      );
+    } else {
+      res.status(httpStatus.UNAUTHORIZED).json({
+        error: true,
+        message: "Provide token!"
+      });
+    }
+  },
+
   /**
    * Listing 23.3 (p. 336)
    * userController.js로의 로그인과 인증 액션 추가
@@ -85,15 +179,18 @@ module.exports = {
      * Listing 26.3 (p. 384)
      * @TODO: userController.js에서 쿼리 매개변수가 존재할 때 JSON으로 응답하기
      */
-
-    res.render("users/index", {
-      page: "users",
-      title: "All Users",
-      // flashMessages: {
-      //   // Listing 22.6 (p. 331) - 렌더링된 인덱스 뷰에서 플래시 메시지를 추가
-      //   success: "Loaded all users!",
-      // },
-    }); // 분리된 액션으로 뷰 렌더링
+    if (req.query.format === "json") {
+      res.json(res.locals.users);
+    } else {
+      res.render("users/index", {
+        page: "users",
+        title: "All Users",
+        // flashMessages: {
+        //   // Listing 22.6 (p. 331) - 렌더링된 인덱스 뷰에서 플래시 메시지를 추가
+        //   success: "Loaded all users!",
+        // },
+      }); // 분리된 액션으로 뷰 렌더링
+    }
   },
 
   /**
